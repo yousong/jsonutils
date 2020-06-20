@@ -255,15 +255,13 @@ func parseJSONValue(str []byte, offset int) (JSONObject, int, error) {
 		if lval == "false" || lval == "no" {
 			return JSONFalse, i, nil
 		}
-		ival, err := strconv.ParseInt(val, 10, 64)
-		if err == nil {
+		if ival, err := strconv.ParseInt(val, 10, 64); err == nil {
 			return &JSONInt{data: ival}, i, nil
-		}
-		fval, err := strconv.ParseFloat(val, 64)
-		if err == nil {
+		} else if fval, err := strconv.ParseFloat(val, 64); err == nil {
 			return &JSONFloat{data: fval}, i, nil
+		} else {
+			return &JSONString{data: val}, i, nil
 		}
-		return &JSONString{data: val}, i, nil
 	}
 }
 
