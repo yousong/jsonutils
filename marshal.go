@@ -41,9 +41,9 @@ func marshalSlice(val reflect.Value, info *reflectutils.SStructFieldInfo) JSONOb
 	for i := 0; i < val.Len(); i += 1 {
 		objs[i] = marshalValue(val.Index(i), nil)
 	}
-	arr := NewArray(objs...)
+	arr := poolNewArray(objs...)
 	if info != nil && info.ForceString {
-		return NewString(arr.String())
+		return poolNewString(arr.String())
 	} else {
 		return arr
 	}
@@ -64,7 +64,7 @@ func marshalMap(val reflect.Value, info *reflectutils.SStructFieldInfo) JSONObje
 	}
 	dict := NewDict(objPairs...)
 	if info != nil && info.ForceString {
-		return NewString(dict.String())
+		return poolNewString(dict.String())
 	} else {
 		return dict
 	}
@@ -77,7 +77,7 @@ func marshalStruct(val reflect.Value, info *reflectutils.SStructFieldInfo) JSONO
 	}
 	dict := NewDict(objPairs...)
 	if info != nil && info.ForceString {
-		return NewString(dict.String())
+		return poolNewString(dict.String())
 	} else {
 		return dict
 	}
@@ -144,9 +144,9 @@ func marshalInt64(val int64, info *reflectutils.SStructFieldInfo) JSONObject {
 	if val == 0 && info != nil && info.OmitZero {
 		return JSONNull
 	} else if info != nil && info.ForceString {
-		return NewString(fmt.Sprintf("%d", val))
+		return poolNewString(fmt.Sprintf("%d", val))
 	} else {
-		return NewInt(val)
+		return poolNewInt(val)
 	}
 }
 
@@ -154,9 +154,9 @@ func marshalFloat64(val float64, info *reflectutils.SStructFieldInfo) JSONObject
 	if val == 0.0 && info != nil && info.OmitZero {
 		return JSONNull
 	} else if info != nil && info.ForceString {
-		return NewString(fmt.Sprintf("%f", val))
+		return poolNewString(fmt.Sprintf("%f", val))
 	} else {
-		return NewFloat(val)
+		return poolNewFloat(val)
 	}
 }
 
@@ -164,7 +164,7 @@ func marshalBoolean(val bool, info *reflectutils.SStructFieldInfo) JSONObject {
 	if !val && info != nil && info.OmitFalse {
 		return JSONNull
 	} else if info != nil && info.ForceString {
-		return NewString(fmt.Sprintf("%v", val))
+		return poolNewString(fmt.Sprintf("%v", val))
 	} else {
 		if val {
 			return JSONTrue
@@ -188,7 +188,7 @@ func marshalString(val string, info *reflectutils.SStructFieldInfo) JSONObject {
 	if len(val) == 0 && info != nil && info.OmitEmpty {
 		return JSONNull
 	} else {
-		return NewString(val)
+		return poolNewString(val)
 	}
 }
 
@@ -197,9 +197,9 @@ func marshalTime(val time.Time, info *reflectutils.SStructFieldInfo) JSONObject 
 		if info != nil && info.OmitEmpty {
 			return JSONNull
 		}
-		return NewString("")
+		return poolNewString("")
 	} else {
-		return NewString(timeutils.FullIsoTime(val))
+		return poolNewString(timeutils.FullIsoTime(val))
 	}
 }
 
@@ -208,7 +208,9 @@ func Marshal(obj interface{}) JSONObject {
 		return JSONNull
 	}
 	objValue := reflect.Indirect(reflect.ValueOf(obj))
-	return marshalValue(objValue, nil)
+	objI := marshalValue(objValue, nil)
+	poolSetFinalizer(objI)
+	return objI
 }
 
 func marshalValue(objValue reflect.Value, info *reflectutils.SStructFieldInfo) JSONObject {
