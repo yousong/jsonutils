@@ -243,7 +243,7 @@ func parseJSONValue(str []byte, offset int) (JSONObject, int, error) {
 	if e != nil {
 		return nil, i, errors.Wrap(e, "parseString")
 	} else if quote {
-		return &JSONString{data: val}, i, nil
+		return poolNewString(val), i, nil
 	} else {
 		lval := strings.ToLower(val)
 		if len(lval) == 0 || lval == "null" || lval == "none" {
@@ -256,11 +256,14 @@ func parseJSONValue(str []byte, offset int) (JSONObject, int, error) {
 			return JSONFalse, i, nil
 		}
 		if ival, err := strconv.ParseInt(val, 10, 64); err == nil {
-			return &JSONInt{data: ival}, i, nil
+			v := poolNewInt(ival)
+			return v, i, nil
 		} else if fval, err := strconv.ParseFloat(val, 64); err == nil {
-			return &JSONFloat{data: fval}, i, nil
+			v := poolNewFloat(fval)
+			return v, i, nil
 		} else {
-			return &JSONString{data: val}, i, nil
+			v := poolNewString(val)
+			return v, i, nil
 		}
 	}
 }
@@ -600,9 +603,11 @@ func Parse(str []byte) (JSONObject, error) {
 		switch str[i] {
 		case '{':
 			val = &JSONDict{}
+			poolSetFinalizer(val)
 			i, e = val.parse(str, i)
 		case '[':
 			val = &JSONArray{}
+			poolSetFinalizer(val)
 			i, e = val.parse(str, i)
 		default:
 			val, i, e = parseJSONValue(str, i)
