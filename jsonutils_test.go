@@ -124,9 +124,11 @@ func BenchmarkParseString(b *testing.B) {
 
 	for _, c := range cases {
 		b.Run(c.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				ParseString(c.c)
-			}
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					ParseString(c.c)
+				}
+			})
 		})
 	}
 }
